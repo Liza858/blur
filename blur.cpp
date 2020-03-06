@@ -10,6 +10,7 @@
 #include <opencv2/highgui/highgui.hpp>
 #include <opencv2/imgproc/imgproc.hpp>
 #include <opencv2/core/core.hpp>
+#include <algorithm>
 
 using std::vector;
 using std::string;
@@ -20,6 +21,8 @@ using std::cout;
 using std::endl;
 using std::map;
 using std::pair;
+
+#define BIG_INT 1000000
 
 
 class image {
@@ -72,7 +75,7 @@ class image {
         
         
         vector<double> find_next_pixel(int gx, int gy, vector<double> pixel, int direction) {
-            double step = 0;
+            double step = 0.5;
             vector<double> next;
             if (gx == 0 && gy == 0) {
                 return pixel;
@@ -80,9 +83,9 @@ class image {
             
             if (abs(gx) > abs(gy)) {
                 if (gx >= 0) {
-                    step = 0.2 * direction;
+                    step = step * direction;
                 } else {
-                    step = -0.2 * direction;
+                    step = -step * direction;
                 }
                 double k = gy / gx;
                 double b = pixel[0] - k * pixel[1]; // b = y - k*x
@@ -99,9 +102,9 @@ class image {
                 }
             } else {
                 if (gy >= 0) {
-                    step = 0.2 * direction;
+                    step = step * direction;
                 } else {
-                    step = -0.2 * direction;
+                    step = -step * direction;
                 }
                 double k = gx / gy;
                 double b = pixel[1] - k * pixel[0]; // b = y - k*x
@@ -122,8 +125,10 @@ class image {
         }
         
         void compute_eages() {
-            cv::Mat im = cv::Mat(h, w ,CV_8U, cv::Scalar(0,0,0));
+            vector<vector<double>> eages_w;
+            vector<double> eages_width;
             for (int i = 1; i < h-1; i++) {
+                vector<double> vec;
                 for (int j = 1; j < w-1; j++) {
                      int gx = -static_cast<int>(img.at<uint8_t>(i, j-1)) + static_cast<int>(img.at<uint8_t>(i, j+1));
                      int gy = -static_cast<int>(img.at<uint8_t>(i-1, j)) + static_cast<int>(img.at<uint8_t>(i+1, j));
@@ -136,11 +141,11 @@ class image {
                          color_pixel = static_cast<int>(img.at<uint8_t>((int)pixel[0], (int)pixel[1]));
                          next = find_next_pixel(gx, gy, pixel, 1);
                          if (next == pixel) {
-                              counter = 100000000;
+                              counter = BIG_INT;
                              break;
                          }
                          if (next[0] > h - 1 || next[1] > w - 1 || next[0] < 1  || next[1] < 1) {
-                            counter = 100000000;
+                            counter = BIG_INT;
                             break;
                          }
                          color_next = static_cast<int>(img.at<uint8_t>(next[0], next[1]));
@@ -158,11 +163,11 @@ class image {
                          color_pixel = static_cast<int>(img.at<uint8_t>((int)pixel[0], (int)pixel[1]));
                          next = find_next_pixel(gx, gy, pixel, -1);
                          if (next == pixel) {
-                              counter = 100000000;
+                              counter = BIG_INT;
                              break;
                          }
                          if (next[0] > h - 1 || next[1] > w - 1 || next[0] < 1  || next[1] < 1) {
-                            counter = 100000000;
+                            counter = BIG_INT;
                             break;
                          }
                          color_next = static_cast<int>(img.at<uint8_t>(next[0], next[1]));
@@ -173,29 +178,27 @@ class image {
                      
                      double w = 1.0 / counter;
                      //cout << w  << "  " << j << " "  << i << endl;
-                     
-                     if (w > 0.155) {
-                          
-                          im.at<uint8_t>(i, j) = (int)255*(1 - exp(-10*(w-0.155)));
-                     }
-                     
+                     eages_width.push_back(w);
+                     vec.push_back(w);              
                 }
-                
+                eages_w.push_back(vec);
             }
-        
+
+            std::sort(eages_width.begin(), eages_width.end());
+            size_t index = eages_width.size() / 100 * 90;
+            double pivot = eages_width[index];
+            cv::Mat im = cv::Mat(h-2, w-2 ,CV_8U, cv::Scalar(0,0,0));
+            for (int i = 0; i < h-2; i++) {
+                for (int j = 0; j < w-2; j++) {
+                     double w = eages_w[i][j];
+                     if (w > pivot) {
+                          im.at<uint8_t>(i, j) = (int)255*(1 - exp(-10*(w-pivot)));
+                     }
+                }
+            }
             cv::imwrite("vgfbf.png", im);
         }
 };
-
-
-
-
-
-
-
-
-
-
 
 
 
