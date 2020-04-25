@@ -48,6 +48,7 @@ class image {
             img = cv::imread(image_file, CV_LOAD_IMAGE_GRAYSCALE);
             w = img.cols;
             h = img.rows;  
+            cv::imwrite("img_gray.png", img);
         }
 
         void sobel_detect() {
@@ -76,6 +77,34 @@ class image {
                  }
              }
              cv::imwrite("vf.png", image_black);
+        }
+
+
+        void sobel_with_limit() {
+            vector<int> pixel;
+            for (int i = 0; i < h; i++) {
+                for (int j = 0; j < w; j++) {
+                    int pix = static_cast<int>(image_black.at<uint8_t>(i, j));
+                    cout << "pix "  << pix << endl;
+                    pixel.push_back(pix);
+                }
+            }
+            vector<int> pixel_copy = pixel;
+            std::sort(pixel.begin(), pixel.end());
+            std::reverse(pixel.begin(), pixel.end());
+            int index = pixel.size() / 100 * 5;
+            double pivot = pixel[index];
+            cv::Mat new_img = cv::Mat(h, w ,CV_8U, cv::Scalar(0,0,0));
+            for (int i = 0; i < h; i++) {
+                for (int j = 0; j < w; j++) {
+                     int w = static_cast<int>(image_black.at<uint8_t>(i, j));
+                     if (w > pivot) {
+                          uint8_t pix = image_black.at<uint8_t>(i, j);
+                          new_img.at<uint8_t>(i, j) = pix;
+                     }
+                }
+            }
+            cv::imwrite("./sobel.png", new_img);
         }
         
         
@@ -182,14 +211,14 @@ class image {
              return width;
         }
 
-        void compute_vertical_or_horizontal_eages(bool isVertical) {
+        void compute_vertical_or_horizontal_eages(bool isHorizontal) {
             vector<vector<double>> eages_img;
             vector<double> eages_width;
             vector<double> vec;
             for (int i = 0; i < h; i++) {
                 for (int j = 0; j < w; j++) {
                     int width = 1;
-                    if (isVertical) {
+                    if (isHorizontal) {
                         int grad =  static_cast<int>(img.at<uint8_t>(i+1, j)) - static_cast<int>(img.at<uint8_t>(i-1, j));
                         width += compute_vertical_eage_width(i, j, grad, true, img);
                         width += compute_vertical_eage_width(i, j, grad, false, img);
@@ -208,7 +237,7 @@ class image {
             }
 
             std::sort(eages_width.begin(), eages_width.end());
-            int index = eages_width.size() / 100 * 90;
+            int index = eages_width.size() / 100 * 95;
             double pivot = eages_width[index];
             image_with_edges = cv::Mat(h, w ,CV_8U, cv::Scalar(0,0,0));
             for (int i = 0; i < h; i++) {
@@ -267,12 +296,17 @@ class image {
                              counter = BIG_INT;
                              break;
                          }
+                         color_next = static_cast<int>(img_src.at<uint8_t>((int)next[0], (int)next[1]));
                          pixel = next;
                          if (color_next <= color_pixel) {
                              counter++;
                          } else {
                              break;
                          }
+                     }
+
+                     if (abs(gx) < 5 && abs(gy) < 5) {
+                        counter = BIG_INT;
                      }
                         
                      double w = 1.0 / counter;
@@ -291,8 +325,8 @@ class image {
             for (int i = 0; i < h-1; i++) {
                 for (int j = 0; j < w-1; j++) {
                      double w = eages_w[i][j];
-                     if (w > pivot) {
-                          cout << i << " " << j << endl;
+                     if (w >= 0.3) {
+                          cout << i << " * " << j << " " << 1 / w <<  endl;
                           image_with_edges.at<uint8_t>(i, j) = (int)255*(1 - exp(-10*(w-pivot)));
                      }
                 }
@@ -378,7 +412,7 @@ class image {
            cv::Mat II = cv::imread("./step2.png", CV_LOAD_IMAGE_GRAYSCALE);
            //cv::copyMakeBorder(II, II, 2, 2, 2, 2, cv::BORDER_CONSTANT, 0 );
            
-           int r = 10;
+           int r = 30;
            double eps = 0.1;
 
            eps *= 255 * 255;   
@@ -394,8 +428,9 @@ class image {
 
 int main() {
 
-    image im("./od.png");
+    image im("./shoes.JPG");
     //im.sobel_detect();
+    //im.sobel_with_limit();
     im.compute_eages();
     im.compute_edge_diffusion();
     im.gu();
