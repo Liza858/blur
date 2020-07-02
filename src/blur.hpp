@@ -5,7 +5,7 @@
 #include <string>
 #include <fstream>
 #include <cstdlib>
-#include <math.h>
+#include <cmath>
 #include <map>
 #include <utility>
 #include <opencv/cv.h>
@@ -13,7 +13,7 @@
 #include <opencv2/imgproc/imgproc.hpp>
 #include <opencv2/core/core.hpp>
 #include <algorithm>
-#include "fastguidedfilter.h"
+#include "guidedfilter.h"
 #include <dirent.h>
 #include <experimental/filesystem>
 
@@ -141,7 +141,7 @@ class image {
 
         int compute_vertical_eage_width(int i, int j, int grad, int isTop, cv::Mat& image) {
             int width = 0;
-            if (grad > 0 && isTop || grad < 0 && !isTop) {
+            if ((grad > 0 && isTop) || (grad < 0 && !isTop)) {
                 int prev_pixel = static_cast<int>(image.at<uint8_t>(i, j));
                 while(i - 1 >= 0) {
                     int next_pixel = static_cast<int>(image.at<uint8_t>(i-1, j));
@@ -177,7 +177,7 @@ class image {
 
         int compute_horizontal_eage_width(int i, int j, int grad, int isLeft, cv::Mat& image) {
             int width = 0;
-            if (grad > 0 && isLeft || grad < 0 && !isLeft) {
+            if ((grad > 0 && isLeft) || (grad < 0 && !isLeft)) {
                 int prev_pixel = static_cast<int>(image.at<uint8_t>(i, j));
                 while(j - 1 >= 0) {
                     int next_pixel = static_cast<int>(image.at<uint8_t>(i, j-1));
@@ -360,7 +360,6 @@ class image {
                     for (int j = 1; j < w - 1; j++) {
                         double dx = 1.0;
                         double dy = 1.0;
-                        double u = image_with_edges_diffusion.at<int32_t>(i, j);
                         double u1 = image_with_edges_diffusion.at<int32_t>(i-1, j);
                         double u2 = image_with_edges_diffusion.at<int32_t>(i+1, j);
                         double u3 = image_with_edges_diffusion.at<int32_t>(i, j-1);
@@ -399,10 +398,9 @@ class image {
         void guided_filter(double r = 0, double eps = 0.01) {   
            if (r == 0) {
               r = 30.0 / ( sqrt(15980544) / sqrt(h*w) );
-           }  
-           cout << r << endl;    
+           }
            eps *= 255 * 255;   
-           image_with_guided_filter = fastGuidedFilter(source_image, image_with_edges_diffusion,  r, eps);
+           image_with_guided_filter = guidedFilter(source_image, image_with_edges_diffusion,  r, eps);
            fs::path path = fs::path(output_directory) /= guided_filter_directory /= fs::path(file_name);
            cv::imwrite(path.string(), image_with_guided_filter);
         }

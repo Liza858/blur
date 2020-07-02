@@ -1,18 +1,12 @@
-#include "prog.hpp"
+#include "blur.hpp"
 #include <iostream>
-#include <vector>
 #include <string>
-#include <fstream>
-#include <cstdlib>
-#include <opencv/cv.h>
 #include <opencv2/highgui/highgui.hpp>
-#include <opencv2/imgproc/imgproc.hpp>
 #include <opencv2/core/core.hpp>
 #include <dirent.h>
-#include <sys/types.h>
 #include <experimental/filesystem>
 #include <stdexcept>
-	
+
 
 
 int find_limit(const std::string& dir_path, double coefficient) {
@@ -32,8 +26,8 @@ int find_limit(const std::string& dir_path, double coefficient) {
       	    int counter = 1;
       	    cv::Mat img = cv::imread((fs::path(dir_path) /= file).string(), CV_LOAD_IMAGE_GRAYSCALE);
       	    int w = img.cols;
-      	    int h = img.rows;  
-            int maxx = 0; 
+      	    int h = img.rows;
+            int maxx = 0;
        	    for (int i = 0; i < h; i++) {
 		for (int j = 0; j < w; j++) {
            	    int color = static_cast<int>(img.at<uint8_t>(i, j));
@@ -60,7 +54,7 @@ int find_limit(const std::string& dir_path, double coefficient) {
 }
 
 void create_binary_mask(const std::string& input_dir, const std::string& file_name, const std::string& output_dir, int limit) {
-    fs::path src_dir = fs::path(input_dir); 
+    fs::path src_dir = fs::path(input_dir);
     fs::path dst_dir = fs::path(output_dir);
     fs::path file = fs::path(file_name);
     fs::path input = src_dir /= file;
@@ -70,7 +64,7 @@ void create_binary_mask(const std::string& input_dir, const std::string& file_na
         cv::Mat img = cv::imread(input.string(), CV_LOAD_IMAGE_GRAYSCALE);
         cv::Mat result = img;
       	int w = img.cols;
-      	int h = img.rows;  
+      	int h = img.rows;
        	for (int i = 0; i < h; i++) {
 	    for (int j = 0; j < w; j++) {
                 int color = static_cast<int>(img.at<uint8_t>(i, j));
@@ -109,7 +103,7 @@ int main(int argc, char *argv[]) {
     if (string(argv[1]) != "-d" && string(argv[1]) != "-f") {
          throw std::runtime_error("wrong command line key");
     }
-   
+
     if (string(argv[1]) == "-d") {
        mod = DIRECTORY;
     }
