@@ -13,12 +13,12 @@
 
 - Получить маску для одного файла:
 
-./main -f <source_directory> <file_name> <output_directory>
+  ./main -f <source_directory> <file_name> <output_directory>
 
 
 - Получить маски для датасета из каталога:
 
-./main -d <source_directory> <output_directory>
+  ./main -d <source_directory> <output_directory>
 
 
 ## Guided filter
